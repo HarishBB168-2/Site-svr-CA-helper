@@ -1,5 +1,7 @@
 import { useState } from "react";
+import httpService from "./services/httpService";
 import "./App.css";
+import ListItem from "./components/ListItem";
 
 function App() {
   // Fields to search : CA No, Installation no, meter no, name, building code
@@ -17,6 +19,7 @@ function App() {
     { id: "contactNo", title: "Contact No", type: "text" },
   ];
 
+  const [intersectionSearch, setIntersectionSearch] = useState(true);
   const [formData, setFormData] = useState({
     caNo: "",
     installation: "",
@@ -28,8 +31,20 @@ function App() {
     contactNo: "",
   });
 
-  const handleFormSubmit = (e) => {
+  const [resultData, setResultData] = useState(null);
+
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
+    const payload = {};
+    Object.keys(formData).forEach((item) => {
+      if (formData[item].length > 0) payload[item] = formData[item];
+    });
+
+    const url = intersectionSearch
+      ? "http://127.0.0.1:8000/api/intersectionSearch"
+      : "http://127.0.0.1:8000/api/search";
+    const { data } = await httpService.post(url, payload);
+    setResultData(data);
   };
 
   const handleChange = (e, fieldId) => {
@@ -40,6 +55,16 @@ function App() {
     <div className="container">
       <form className="row" method="post" onSubmit={handleFormSubmit}>
         <div className="container">
+          <div className="row">
+            <label htmlFor="intersectionSearch">Intersection Search</label>
+            <input
+              type="checkbox"
+              name="intersectionSearch"
+              id="intersectionSearch"
+              checked={intersectionSearch}
+              onChange={() => setIntersectionSearch(!intersectionSearch)}
+            />
+          </div>
           <div className="row">
             {searchFields.slice(0, 4).map((item) => (
               <div className="column" key={item.id}>
@@ -73,6 +98,13 @@ function App() {
           <button type="submit">Submit</button>
         </div>
       </form>
+      {resultData && (
+        <div>
+          {resultData.map((item, idx) => (
+            <ListItem data={item} key={idx} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
